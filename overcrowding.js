@@ -8,11 +8,12 @@ let path;
 
 /* Create a new SVG. */
 let svg = d3.select("#overcrowding");
-
-let background = svg.append("rect")
+svg.append("rect")
   .attr("class", "background")
   .attr("width", width)
   .attr("height", height);
+
+let g = svg.append("g");
 
 /* Queue assets. */
 queue()
@@ -20,6 +21,9 @@ queue()
   .defer(d3.json, "/data/clusters.topojson")
   .defer(d3.json, "/data/schools.geojson")
   .await(draw);
+
+/* Centered clusters. */
+let cluster;
 
 
 function draw(error, clusters, schools) {
@@ -33,20 +37,60 @@ function draw(error, clusters, schools) {
   let offset = [(width - scale * (bounds[1][0] + bounds[0][0])) / 2, (height - scale * (bounds[1][1] + bounds[0][1])) / 2];
   projection.scale(scale).translate(offset);
 
-  svg.append("g").attr("class", "clusters")
-    .selectAll("path")
-    .data(geojson.features).enter().append("path")
+  g.append("path")
+    .datum(topojson.merge(clusters, clusters.objects.clusters.geometries))
     .attr("d", path)
-    .attr("class", "cluster");
+    .attr("class", "maryland");
 
-  let border = svg.append("path")
+  g.append("path")
     .datum(topojson.mesh(clusters, clusters.objects.clusters, (a, b) => a !== b))
     .attr("d", path)
     .attr("class", "border");
 
+  g.append("g").attr("class", "clusters")
+    .selectAll("path")
+    .data(geojson.features).enter().append("path")
+    .attr("d", path)
+    .attr("class", "cluster")
+    .on("click", click);
+
 }
 
 
+function click(d) {
+  let x, y, w, h, k;
+  if (d !== undefined && d.hasOwnProperty("id") && d !== cluster) {
+    // load sidebar
+  } else {
+    // clear sidebar
+  }
+
+  /* Find the center and zoom for the state. */
+  if (d && cluster !== d) {
+    let centroid = path.centroid(d);
+    let bounds = path.bounds(d);
+    x = centroid[0];
+    y = centroid[1];
+    w = bounds[1][0] - bounds[0][0];
+    h = bounds[1][1] - bounds[0][1];
+    k = 1 / (1.5 * Math.max(w / width, h / height));
+    cluster = d;
+  } else {
+    x = width / 2;
+    y = height / 2;
+    k = 1;
+    cluster = null;
+  }
+
+  /* Set the path as active and zoom. */
+  g.selectAll("path")
+    .classed("active", cluster && function(d) { return d === cluster; });
+  g.transition()
+    .duration(750)
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+    .style("stroke-width", 1.5 / k + "px");
+
+}
 
 
 
