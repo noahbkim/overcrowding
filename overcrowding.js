@@ -3,41 +3,46 @@ const height = window.innerHeight;
 
 
 /* Create the projection of the US map. */
-let projection = d3.geo.mercator();
-let path = d3.geo.path().projection(projection);
+let projection;
+let path;
 
 /* Create a new SVG. */
 let svg = d3.select("#overcrowding");
-let g = svg.append("g");
+
+let background = svg.append("rect")
+  .attr("class", "background")
+  .attr("width", width)
+  .attr("height", height);
 
 /* Queue assets. */
 queue()
-  .defer(d3.json, "/data/clusters.geojson")
+  //.defer(d3.json, "/data/maryland.geojson")
+  .defer(d3.json, "/data/clusters.topojson")
   .defer(d3.json, "/data/schools.geojson")
   .await(draw);
 
 
-
 function draw(error, clusters, schools) {
 
-  let center = d3.geo.centroid(clusters);
-  let bounds = path.bounds(clusters);
-  let vertical = height / (bounds[1][0] - bounds[0][0]);
-  let horizontal = width / (bounds[1][1] - bounds[0][1]);
-  let scale = Math.min(vertical, horizontal);
-  let offset = [width - (bounds[1][0] + bounds[0][0]) / 2, height + (bounds[1][1] - bounds[0][1]) / 2];
-  projection = d3.geo.mercator().center(center).scale(scale).translate(offset);
+  let geojson = topojson.feature(clusters, clusters.objects.clusters);
 
-  let background = svg.append("rect")
-    .attr("class", "background")
-    .attr("width", width)
-    .attr("height", height);
+  projection = d3.geo.albers().scale(1).translate([0, 0]);
+  path = d3.geo.path().projection(projection);
+  let bounds = path.bounds(geojson);
+  let scale = .95 / Math.max((bounds[1][0] - bounds[0][0]) / width, (bounds[1][1] - bounds[0][1]) / height);
+  let offset = [(width - scale * (bounds[1][0] + bounds[0][0])) / 2, (height - scale * (bounds[1][1] + bounds[0][1])) / 2];
+  projection.scale(scale).translate(offset);
 
-  svg.selectAll("path").data(clusters.features).enter().append("path")
+  svg.append("g").attr("class", "clusters")
+    .selectAll("path")
+    .data(geojson.features).enter().append("path")
     .attr("d", path)
-    .style("fill", "red")
-    .style("stroke-width", "1")
-    .style("stroke", "black")
+    .attr("class", "cluster");
+
+  let border = svg.append("path")
+    .datum(topojson.mesh(clusters, clusters.objects.clusters, (a, b) => a !== b))
+    .attr("d", path)
+    .attr("class", "border");
 
 }
 
