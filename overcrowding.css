@@ -2,18 +2,38 @@ body {
   margin: 0;
 }
 
+#sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 300px;
+  background-color: #D1D1D3;
+  background: linear-gradient(to right, #999, #E3E3E5);
+  background: -webkit-linear-gradient(left, #CCC, #E3E3E5 2%);
+  box-sizing: border-box;
+  padding: 1em 1.5em;
+  color: #393D3F;
+  overflow: scroll;
+}
+
 .background {
   fill: #FFF;
   pointer-events: all;
 }
 
-.maryland {
+.montgomery {
   fill: #AAA;
+}
+
+.montgomery.active {
+  fill: #DDD;
+  transition: fill 0.75s ease;
 }
 
 .border {
   fill: none;
-  stroke: #DDD;
+  stroke: #FFF;
   stroke-width: 1.5px;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -28,6 +48,17 @@ body {
   transition: fill 0.5s ease;
 }
 
-.cluster.active {
-  stroke: orange;
+.cluster.background {
+  fill: transparent;
+}
+
+.school {
+  fill: transparent;
+  stroke: black;
+  stroke-width: 2px;
+  pointer-events: all;
+}
+
+.school:hover {
+  fill: black;
 }
