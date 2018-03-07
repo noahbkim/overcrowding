@@ -36,7 +36,9 @@ body {
 }
 
 
-#sidebar span {
+#sidebar p.subtitle {
+  margin: 0;
+  padding: 0;
   font-style: italic;
 }
 
@@ -44,6 +46,10 @@ body {
   text-decoration: none;
   font-weight: bold;
   color: inherit;
+}
+
+#sidebar p {
+  line-height: 125%;
 }
 
 .background {

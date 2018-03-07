@@ -46,7 +46,7 @@ class Controller {
 
   constructor() {
     this.d = {clusters: null, cluster: null, school: null, capacity: null};  // raw data
-    this.c = {schools: {}, clusters: {}};  // computed data
+    this.c = {schools: {}, clusters: {}, clustersRaw: {}, total: [0, 0]};  // computed data
     this.o = {county: null, clusters: null, schools: null};  //
     this.r = new Renderer(
       d3.select("#overcrowding").append("svg")
@@ -106,6 +106,8 @@ class Controller {
 
   data() {
     let capacity, enrollment;
+
+    // Capacity and enrollment
     for (let school of this.d.clusters.objects.schools.geometries) {
       let schoolId = school["properties"]["s_id3"];
       let clusterId = school["properties"]["cluster"];
@@ -113,16 +115,37 @@ class Controller {
       enrollment = parseFloat(this.search(schoolId, "2016", ENROLLMENT) || "0");
       if (capacity && enrollment) {
         this.c.schools[schoolId] = [enrollment, capacity];
-        if (!this.c.clusters.hasOwnProperty(clusterId))
-          this.c.clusters[clusterId] = [0, 0];
-        this.c.clusters[clusterId][0] += enrollment;
-        this.c.clusters[clusterId][1] += capacity;
+        if (!this.c.clustersRaw.hasOwnProperty(clusterId))
+          this.c.clustersRaw[clusterId] = [0, 0];
+        this.c.clustersRaw[clusterId][0] += enrollment;
+        this.c.clustersRaw[clusterId][1] += capacity;
+        this.c.total[0] += enrollment;
+        this.c.total[1] += capacity;
       }
     }
+
+    // Compute fractions
     for (let cluster of this.d.clusters.objects.clusters.geometries) {
       let clusterId = cluster["properties"]["id"];
-      this.c.clusters[clusterId] = this.c.clusters[clusterId][0] / this.c.clusters[clusterId][1];
+      this.c.clusters[clusterId] = this.c.clustersRaw[clusterId][0] / this.c.clustersRaw[clusterId][1];
     }
+
+    this.dataStatistics();
+    this.dataHeatmap();
+
+  }
+
+  dataStatistics() {
+    d3.select("#net-enrollment").text(this.c.total[0] + " (" +
+      Math.round(this.c.total[0] / this.c.total[1] * 100) + "%)");
+    d3.select("#net-capacity").text(this.c.total[1]);
+    let schools = Object.values(this.c.schools);
+    let overEnrolled = schools.filter(t => t[0] > t[1]).length;
+    d3.select("#total-schools").text(schools.length);
+    d3.select("#over-enrolled").text(overEnrolled + " (" + Math.round(overEnrolled / schools.length * 100) + "%)");
+  }
+
+  dataHeatmap() {
     let min = 0.75; //Math.min.apply(Math, Object.values(this.c.clusters));
     let max = Math.max.apply(Math, Object.values(this.c.clusters));
     let range = max - min;
@@ -130,7 +153,6 @@ class Controller {
       let value = (this.c.clusters[cluster["properties"]["id"]] - min) / range;
       return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 0.5)";
     });
-
   }
 
   search(schoolId, year, entryType) {
