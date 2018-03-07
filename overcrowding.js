@@ -45,7 +45,7 @@ class Renderer {
 class Controller {
 
   constructor() {
-    this.d = {clusters: null, cluster: null, school: null, capacity: null};  // raw data
+    this.d = {clusters: null, cluster: null, school: null, schools: null, capacity: null};  // raw data
     this.c = {schools: {}, clusters: {}, clustersRaw: {}, total: [0, 0]};  // computed data
     this.o = {county: null, clusters: null, schools: null};  //
     this.r = new Renderer(
@@ -57,6 +57,7 @@ class Controller {
   load(error, clusters, capacity) {
     this.d.clusters = clusters;
     this.d.capacity = capacity;
+    this.d.schools = topojson.feature(this.d.clusters, this.d.clusters.objects.schools);
     this.d.clusters.geo = topojson.feature(this.d.clusters, this.d.clusters.objects.clusters);
     if (!error) {
       this.draw();
@@ -96,12 +97,19 @@ class Controller {
       .on("click", this.selectCluster.bind(this));
   }
 
-  drawSchools() {
-    g.append("g").attr("class", "schools")
+  drawSchools(clusterId) {
+    this.o.schools = this.r.g.append("g").attr("class", "schools")
       .selectAll("path")
-      .data(this.d.schools.features).enter().append("path")
+      .data(this.d.schools.features.filter(s => s["properties"]["cluster"] === clusterId)).enter().append("path")
       .attr("d", this.r.path)
       .attr("class", "school");
+  }
+
+  removeSchools() {
+    if (this.o.schools) {
+      this.o.schools.remove();
+      this.o.schools = null;
+    }
   }
 
   data() {
@@ -172,8 +180,13 @@ class Controller {
   selectCluster(cluster) {
 
     let x, y, w, h, k;
-    if (cluster !== undefined && cluster.hasOwnProperty("id") && cluster !== this.cluster) {}
-    else {}
+    if (cluster !== undefined && cluster !== this.cluster) {
+      this.removeSchools();
+      this.drawSchools(cluster["properties"]["id"]);
+      d3.select("#current-item").text(cluster["properties"]["name"]);
+    } else {
+      this.removeSchools();
+    }
 
     /* Find the center and zoom for the state. */
     if (cluster && cluster !== this.cluster) {
