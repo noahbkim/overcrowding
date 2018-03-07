@@ -1,4 +1,4 @@
-const W = window.innerWidth - 300;
+const W = window.innerWidth - 320;
 const H = window.innerHeight;
 
 
@@ -31,7 +31,7 @@ class Renderer {
 class Controller {
 
   constructor() {
-    this.d = {clusters: null, cluster: null, schools: null, school: null};
+    this.d = {clusters: null, cluster: null, school: null};
     this.o = {county: null, clusters: null, schools: null};
     this.r = new Renderer(
       d3.select("#overcrowding").append("svg")
@@ -39,17 +39,16 @@ class Controller {
         .attr("height", H));
   }
 
-  load(error, clusters, schools) {
+  load(error, clusters) {
     this.d.clusters = clusters;
     this.d.clusters.geo = topojson.feature(this.d.clusters, this.d.clusters.objects.clusters);
-    this.d.schools = schools;
     if (!error) this.draw();
     else console.log(error);
   }
 
   draw() {
     this.r.center(this.r.path.bounds(this.d.clusters.geo));
-    this.drawCounty();
+    //this.drawCounty();
     this.drawClusters();
     this.drawBorders();
   }
@@ -90,11 +89,11 @@ class Controller {
   main() {
     queue()
       .defer(d3.json, "/data/clusters.topojson")
-      .defer(d3.json, "/data/schools.geojson")
       .await(this.load.bind(this));
   }
 
   selectCluster(cluster) {
+
     let x, y, w, h, k;
     if (cluster !== undefined && cluster.hasOwnProperty("id") && cluster !== this.cluster) {}
     else {}
@@ -117,12 +116,11 @@ class Controller {
     }
 
     /* Set the path as active and zoom. */
-
-    this.o.county.classed("active", this.cluster);
-    this.o.clusters.classed("background", cluster && (cluster => cluster === this.cluster));
+    this.r.g.selectAll("path").classed("background", this.cluster && (cluster => cluster !== this.cluster));
     this.r.g.transition().duration(750)
       .attr("transform", "translate(" + W/2 + "," + H/2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-W", 1.5 / k + "px");
+
   }
 
 }
