@@ -8,14 +8,14 @@ body {
   top: 0;
   bottom: 0;
   right: 0;
-  width: 320px;
+  width: 350px;
   background-color: #EEE;
   background: linear-gradient(to right, #999, #EEE);
   background: -webkit-linear-gradient(left, #CCC, #EEE 2%);
   box-sizing: border-box;
   padding: 1em 1.5em;
   color: #393D3F;
-  overflow: scroll;
+  overflow-y: scroll;
 }
 
 #sidebar .bottom {

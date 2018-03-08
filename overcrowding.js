@@ -1,4 +1,4 @@
-const W = window.innerWidth - 320;
+const W = window.innerWidth - 350;
 const H = window.innerHeight;
 
 const CAPACITY = "Capacity";
@@ -11,10 +11,9 @@ function teardrop(projection) {
     let c = projection(school["geometry"]["coordinates"]);
     return [
       "M", c[0] + "," + c[1],
-      //"l", -5 + "," + -15,
-      "c", "-5,-7 -5,-14 -5,-15",
-      "c", "0,-7 10,-7 10,0",
-      "c", "0,1 0,8 -5,15",
+      "c -5,-7 -5,-14 -5,-15",
+      "c 0,-7 10,-7 10,0",
+      "c 0,1 0,8 -5,15",
       "z"
     ].join(" ");
   }
