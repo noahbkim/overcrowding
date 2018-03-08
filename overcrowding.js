@@ -6,13 +6,16 @@ const ENROLLMENT = "Enrollment";
 
 
 
-function componentToHex(c) {
-    const hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+function teardrop(projection) {
+  return (school) => {
+    let c = projection(school["geometry"]["coordinates"]);
+    return [
+      "M", c[0] + ", " + c[1],
+      "l", -10 + ", " + -20,
+      "h", 19,
+      "l", -10 + "," + 20
+    ].join(" ");
+  }
 }
 
 
@@ -101,7 +104,7 @@ class Controller {
     this.o.schools = this.r.g.append("g").attr("class", "schools")
       .selectAll("path")
       .data(this.d.schools.features.filter(s => s["properties"]["cluster"] === clusterId)).enter().append("path")
-      .attr("d", this.r.path)
+      .attr("d", teardrop(this.r.projection))
       .attr("class", "school");
   }
 
