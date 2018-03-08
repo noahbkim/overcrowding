@@ -51,9 +51,24 @@ class Renderer {
 class Controller {
 
   constructor() {
-    this.d = {clusters: null, cluster: null, school: null, schools: null, capacity: null};  // raw data
-    this.c = {schools: {}, clusters: {}, clustersRaw: {}, total: [0, 0]};  // computed data
-    this.o = {county: null, clusters: null, schools: null};  //
+    this.d = {
+      clusters: null,
+      cluster: null,
+      school: null,
+      schools: null,
+      capacity: null};  // raw data
+    this.c = {
+      schools: {},
+      schoolsRaw: {},
+      schoolsScale: {min: Infinity, max: -Infinity},
+      clusters: {},
+      clustersRaw: {},
+      clustersScale: {min: Infinity, max: -Infinity},
+      total: [0, 0]};  // computed data
+    this.o = {
+      county: null,
+      clusters: null,
+      schools: null};  // drawn objects
     this.r = new Renderer(
       d3.select("#overcrowding").append("svg")
         .attr("width", W)
@@ -108,7 +123,12 @@ class Controller {
       .selectAll("path")
       .data(this.d.schools.features.filter(s => s["properties"]["cluster"] === clusterId)).enter().append("path")
       .attr("d", teardrop(this.r.projection))
-      .attr("class", "school");
+      .attr("class", "school")
+      .style("stroke", school => {
+        let value = (this.c.schools[school["properties"]["s_id3"]] - this.c.schoolsScale.min) / (this.c.schoolsScale.max - this.c.schoolsScale.min);
+        return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 1)";
+      })
+      .on("click", this.selectSchool.bind(this));
   }
 
   removeSchools() {
@@ -128,13 +148,22 @@ class Controller {
       capacity = parseFloat(this.search(schoolId, "2016", CAPACITY) || "0");
       enrollment = parseFloat(this.search(schoolId, "2016", ENROLLMENT) || "0");
       if (capacity && enrollment) {
-        this.c.schools[schoolId] = [enrollment, capacity];
+
+        // School
+        this.c.schoolsRaw[schoolId] = [enrollment, capacity];
+        let fraction = enrollment / capacity;
+        this.c.schools[schoolId] = fraction;
+        this.c.schoolsScale.min = Math.min(this.c.schoolsScale.min, fraction);
+        this.c.schoolsScale.max = Math.max(this.c.schoolsScale.max, fraction);
+
+        // Cluster
         if (!this.c.clustersRaw.hasOwnProperty(clusterId))
           this.c.clustersRaw[clusterId] = [0, 0];
         this.c.clustersRaw[clusterId][0] += enrollment;
         this.c.clustersRaw[clusterId][1] += capacity;
         this.c.total[0] += enrollment;
         this.c.total[1] += capacity;
+
       }
     }
 
@@ -153,7 +182,7 @@ class Controller {
     d3.select("#net-enrollment").text(this.c.total[0] + " (" +
       Math.round(this.c.total[0] / this.c.total[1] * 100) + "%)");
     d3.select("#net-capacity").text(this.c.total[1]);
-    let schools = Object.values(this.c.schools);
+    let schools = Object.values(this.c.schoolsRaw);
     let overEnrolled = schools.filter(t => t[0] > t[1]).length;
     d3.select("#total-schools").text(schools.length);
     d3.select("#over-enrolled").text(overEnrolled + " (" + Math.round(overEnrolled / schools.length * 100) + "%)");
@@ -162,11 +191,12 @@ class Controller {
   dataHeatmap() {
     let min = 0.75; //Math.min.apply(Math, Object.values(this.c.clusters));
     let max = Math.max.apply(Math, Object.values(this.c.clusters));
-    let range = max - min;
     this.o.clusters.style("fill", cluster => {
-      let value = (this.c.clusters[cluster["properties"]["id"]] - min) / range;
+      let value = (this.c.clusters[cluster["properties"]["id"]] - min) / (max - min);
       return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 0.5)";
     });
+    this.c.clustersScale.min = min;
+    this.c.clustersScale.max = max;
   }
 
   search(schoolId, year, entryType) {
@@ -216,6 +246,12 @@ class Controller {
     this.r.g.transition().duration(750)
       .attr("transform", "translate(" + W/2 + "," + H/2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-W", 1.5 / k + "px");
+
+  }
+
+  selectSchool(school) {
+
+    console.log(school);
 
   }
 

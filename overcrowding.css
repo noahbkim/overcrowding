@@ -88,12 +88,12 @@ body {
 }
 
 .school {
-  stroke: black;
-  stroke-width: 2px;
+  /*stroke: black;*/
+  stroke-width: 1.5px;
   fill: transparent;
   pointer-events: all;
 }
 
 .school:hover {
-  fill: black;
+  stroke-width: 2px;
 }
