@@ -4,6 +4,8 @@ const H = window.innerHeight;
 const CAPACITY = "Capacity";
 const ENROLLMENT = "Enrollment";
 
+const PREFIX = ""; //"overcrowding/"
+
 
 
 function teardrop(projection) {
@@ -176,8 +178,8 @@ class Controller {
 
   main() {
     queue()
-      .defer(d3.json, "/data/clusters.topojson")
-      .defer(d3.csv, "/data/capacity.csv")
+      .defer(d3.json, PREFIX + "/data/clusters.topojson")
+      .defer(d3.csv, PREFIX + "/data/capacity.csv")
       .await(this.load.bind(this));
   }
 
