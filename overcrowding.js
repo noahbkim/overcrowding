@@ -10,10 +10,12 @@ function teardrop(projection) {
   return (school) => {
     let c = projection(school["geometry"]["coordinates"]);
     return [
-      "M", c[0] + ", " + c[1],
-      "l", -10 + ", " + -20,
-      "h", 19,
-      "l", -10 + "," + 20
+      "M", c[0] + "," + c[1],
+      //"l", -5 + "," + -15,
+      "c", "-5,-7 -5,-14 -5,-15",
+      "c", "0,-7 10,-7 10,0",
+      "c", "0,1 0,8 -5,15",
+      "z"
     ].join(" ");
   }
 }

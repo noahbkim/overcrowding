@@ -88,9 +88,9 @@ body {
 }
 
 .school {
-  fill: black;
   stroke: black;
   stroke-width: 2px;
+  fill: transparent;
   pointer-events: all;
 }
 
