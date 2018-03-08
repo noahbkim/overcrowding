@@ -31,8 +31,16 @@ body {
 
 #sidebar h2 {
   font-size: 20px;
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
+  margin-top: 0.5em;
+  margin-bottom: 0.15em;
+}
+
+#sidebar h2 + p {
+  margin-top: 0.1em;
+}
+
+#sidebar h2:empty + p {
+  display: none;
 }
 
 
@@ -95,5 +103,9 @@ body {
 }
 
 .school:hover {
-  stroke-width: 2px;
+  stroke-width: 2.5px;
+}
+
+.school.active {
+  stroke-width: 2.5px;
 }

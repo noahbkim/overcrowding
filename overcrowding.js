@@ -4,6 +4,8 @@ const H = window.innerHeight;
 const CAPACITY = "Capacity";
 const ENROLLMENT = "Enrollment";
 
+const MODE = {NONE: 0, SCHOOL: 1, CLUSTER: 2};
+
 const PREFIX = ""; //"overcrowding/"
 
 
@@ -53,8 +55,6 @@ class Controller {
   constructor() {
     this.d = {
       clusters: null,
-      cluster: null,
-      school: null,
       schools: null,
       capacity: null};  // raw data
     this.c = {
@@ -69,6 +69,7 @@ class Controller {
       county: null,
       clusters: null,
       schools: null};  // drawn objects
+    this.mode = MODE.NONE;
     this.r = new Renderer(
       d3.select("#overcrowding").append("svg")
         .attr("width", W)
@@ -165,6 +166,7 @@ class Controller {
         this.c.total[1] += capacity;
 
       }
+
     }
 
     // Compute fractions
@@ -216,16 +218,22 @@ class Controller {
   selectCluster(cluster) {
 
     let x, y, w, h, k;
-    if (cluster !== undefined && cluster !== this.cluster) {
+    if (cluster && cluster !== this.d.cluster) {
       this.removeSchools();
       this.drawSchools(cluster["properties"]["id"]);
-      d3.select("#current-item").text(cluster["properties"]["name"]);
+      this.clusterStatistics(cluster);
+      this.mode = MODE.CLUSTER;
+    } else if (this.mode === MODE.SCHOOL) {
+      this.selectSchool(null);
+      this.clusterStatistics(cluster);
+      this.mode = MODE.CLUSTER;
+      return;
     } else {
       this.removeSchools();
     }
 
     /* Find the center and zoom for the state. */
-    if (cluster && cluster !== this.cluster) {
+    if (cluster && cluster !== this.d.cluster) {
       let centroid = this.r.path.centroid(cluster);
       let bounds = this.r.path.bounds(cluster);
       x = centroid[0];
@@ -233,16 +241,16 @@ class Controller {
       w = bounds[1][0] - bounds[0][0];
       h = bounds[1][1] - bounds[0][1];
       k = 1 / (1.5 * Math.max(w / W, h / H));
-      this.cluster = cluster;
+      this.d.cluster = cluster;
     } else {
       x = W / 2;
       y = H / 2;
       k = 1;
-      this.cluster = null;
+      this.d.cluster = null;
     }
 
     /* Set the path as active and zoom. */
-    this.r.g.selectAll("path").classed("background", this.cluster && (cluster => cluster !== this.cluster));
+    this.r.g.selectAll("path").classed("background", this.d.cluster && (cluster => cluster !== this.d.cluster));
     this.r.g.transition().duration(750)
       .attr("transform", "translate(" + W/2 + "," + H/2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-W", 1.5 / k + "px");
@@ -250,9 +258,33 @@ class Controller {
   }
 
   selectSchool(school) {
+    if (school && school !== this.d.school) {
+      this.d.school = school;
+      this.schoolStatistics(school);
+      this.mode = MODE.SCHOOL;
+    } else {
+      this.d.school = null;
+      this.mode = MODE.CLUSTER;
+      this.clusterStatistics(this.d.cluster);
+    }
 
-    console.log(school);
+    this.r.g.selectAll("path").classed("active", this.d.school && (school => school === this.d.school));
+  }
 
+  clusterStatistics(cluster) {
+    d3.select("#current-item").text(cluster["properties"]["name"]);
+    let clusterId = cluster["properties"]["id"];
+    d3.select("#item-capacity").text(this.c.clustersRaw[clusterId][1]);
+    d3.select("#item-enrollment").text(this.c.clustersRaw[clusterId][0] + " (" +
+      Math.round(100 * this.c.clusters[clusterId]) + "%)");
+  }
+
+  schoolStatistics(school) {
+    d3.select("#current-item").text(school["properties"]["school"]);
+    let schoolId = school["properties"]["s_id3"];
+    d3.select("#item-capacity").text(this.c.schoolsRaw[schoolId][1]);
+    d3.select("#item-enrollment").text(this.c.schoolsRaw[schoolId][0] + " (" +
+      Math.round(100 * this.c.schools[schoolId]) + "%)");
   }
 
 }
