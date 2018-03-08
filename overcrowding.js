@@ -229,6 +229,7 @@ class Controller {
       this.mode = MODE.CLUSTER;
       return;
     } else {
+      this.clusterStatistics(null);
       this.removeSchools();
     }
 
@@ -272,6 +273,7 @@ class Controller {
   }
 
   clusterStatistics(cluster) {
+    if (cluster === null) { d3.select("#current-item").text(""); return }
     d3.select("#current-item").text(cluster["properties"]["name"]);
     let clusterId = cluster["properties"]["id"];
     d3.select("#item-capacity").text(this.c.clustersRaw[clusterId][1]);
