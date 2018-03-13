@@ -9,18 +9,46 @@ const MODE = {NONE: 0, SCHOOL: 1, CLUSTER: 2};
 const PREFIX = ""; //"overcrowding/"
 
 
+/*
+Teardrop
+[
+  "M ", c[0] + "," + c[1],
+  "c -5,-7 -5,-14 -5,-15",
+  "c 0,-7 10,-7 10,0",
+  "c 0,1 0,8 -5,15",
+  "z"
+].join(" ");
+Triangle
+[
+  "M", c[0] + "," + c[1],
+  "l -6,-18",
+  "l 12,0",
+  "z"
+].join(" ");
+*/
 
-function teardrop(projection) {
-  return (school) => {
-    let c = projection(school["geometry"]["coordinates"]);
-    return [
-      "M", c[0] + "," + c[1],
-      "c -5,-7 -5,-14 -5,-15",
-      "c 0,-7 10,-7 10,0",
-      "c 0,1 0,8 -5,15",
-      "z"
-    ].join(" ");
-  }
+
+function marker(school, projection) {
+  let c = projection(school["geometry"]["coordinates"]);
+  if (school["properties"]["type"] === "ES") return [
+    "M", (c[0] - 5) + "," + c[1],
+    "a 5,5 0 1,0 10 0",
+    "a -5,5 0 1,0 -10 0",
+    "z"
+  ].join(" ");
+  if (school["properties"]["type"] === "MS") return [
+    "M", c[0] + "," + (c[1] + 6.5),
+    "l 5,-9.75",
+    "l -10,0",
+    "z"
+  ].join(" ");
+  if (school["properties"]["type"] === "HS") return [
+    "M", c[0] + "," + (c[1] + 6),
+    "l 6,-6",
+    "l -6,-6",
+    "l -6,6",
+    "z"
+  ].join(" ");
 }
 
 
@@ -123,7 +151,7 @@ class Controller {
     this.o.schools = this.r.g.append("g").attr("class", "schools")
       .selectAll("path")
       .data(this.d.schools.features.filter(s => s["properties"]["cluster"] === clusterId)).enter().append("path")
-      .attr("d", teardrop(this.r.projection))
+      .attr("d", school => marker(school, this.r.projection))
       .attr("class", "school")
       .style("stroke", school => {
         let value = (this.c.schools[school["properties"]["s_id3"]] - this.c.schoolsScale.min) / (this.c.schoolsScale.max - this.c.schoolsScale.min);
@@ -210,8 +238,8 @@ class Controller {
 
   main() {
     queue()
-      .defer(d3.json, PREFIX + "/data/clusters.topojson")
-      .defer(d3.csv, PREFIX + "/data/capacity.csv")
+      .defer(d3.json, PREFIX + "data/clusters.topojson")
+      .defer(d3.csv, PREFIX + "data/capacity.csv")
       .await(this.load.bind(this));
   }
 
