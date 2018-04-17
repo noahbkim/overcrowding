@@ -111,7 +111,7 @@ class Data {
 
 
 /** Base class for data plugins to make convenient. */
-class Plugin {
+class DataPlugin {
 
   /** Download queue functionality. */
   constructor(parser, url) {
@@ -126,14 +126,13 @@ class Plugin {
 
 
 /** Heatmap data plugin. */
-class CapacityPlugin extends Plugin {
+class CapacityPlugin extends DataPlugin {
 
   constructor() {
     super(d3.csv, PREFIX + "data/capacity.csv");
     this.data = null;
-    this.ratios =  {schools: {}, clusters: {}, total: {}};  // Ratios of enrollment to capacity
+    this.ratios =  {schools: {}, clusters: {}, total: [0, 0]};  // Ratios of enrollment to capacity
     this.scales = {schools: [Infinity, -Infinity], clusters: [Infinity, -Infinity]};  // Min and max ratios
-    this.total = [0, 0];
   }
 
   /** Compute capacity and enrollment. */
@@ -199,24 +198,44 @@ class CapacityPlugin extends Plugin {
 }
 
 
+/** The central application controller. */
 class Controller {
 
+  /** Initialize a new application. */
   constructor() {
     this.capacity = new CapacityPlugin();
     this.data = new Data([this.capacity]);
     this.renderer = new Renderer(d3.select("#overcrowding").append("svg").attr("width", W).attr("height", H));
-    this.o = {county: null, clusters: null, schools: null};  // drawn objects
+    this.objects = {county: null, clusters: null, schools: null};  // drawn objects
+    this.selection = {cluster: null, school: null};
     this.mode = MODE.NONE;
   }
 
+  /* MARK: Application controls */
+
+  /** Start the application runtime. */
+  start() {
+    this.data.download(this.main.bind(this));
+  }
+
+  /** Draw the visualization and apply data. */
+  main() {
+    this.draw();
+    this.apply();
+  }
+
+  /* MARK: Drawing controls */
+
+  /** Center the renderer and draw the clusters. */
   draw() {
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawBorders();
   }
 
+  /** Draw the county clusters, bind the click events. */
   drawClusters() {
-    this.o.clusters = this.renderer.g.append("g").attr("class", "clusters")
+    this.objects.clusters = this.renderer.g.append("g").attr("class", "clusters")
       .selectAll("path")
       .data(this.data.clusters.geo.features).enter().append("path")
       .attr("d", this.renderer.path)
@@ -224,6 +243,7 @@ class Controller {
       .on("click", this.selectCluster.bind(this));
   }
 
+  /** Draw borders between the cluster regions. */
   drawBorders() {
     this.renderer.g.append("path")
       .datum(topojson.mesh(this.data.clusters, this.data.clusters.objects.clusters, (a, b) => a !== b))
@@ -231,53 +251,85 @@ class Controller {
       .attr("class", "border");
   }
 
+  /** Draw schools for a particular cluster. */
   drawSchools(clusterId) {
-    this.o.schools = this.renderer.g.append("g").attr("class", "schools")
+    this.objects.schools = this.renderer.g.append("g").attr("class", "schools")
       .selectAll("path")
       .data(this.data.schools.geo.features.filter(
         s => s["properties"]["cluster"] === clusterId)).enter()
       .append("path")
-        .attr("d", school => this.renderer.marker(school))
+        .attr("d", school => this.renderer.teardrop(school.geometry.coordinates))
         .attr("class", "school")
         .style("stroke", school => this.capacity.getSchoolColor(school))
         .on("click", this.selectSchool.bind(this));
   }
 
+  /** Remove the active schools. */
   removeSchools() {
-    if (this.o.schools) {
-      this.o.schools.remove();
-      this.o.schools = null;
+    if (this.objects.schools) {
+      this.objects.schools.remove();
+      this.objects.schools = null;
     }
   }
 
-  applyStatistics() {
-    let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
-    d3.select("#net-enrollment").text(this.capacity.ratios.total[0] + " (" + enrollment + "%)");
-    d3.select("#net-capacity").text(this.capacity.ratios.total[1]);
-    let schools = Object.values(this.capacity.ratios.schools);
-    let over = schools.filter(t => t[0] > t[1]).length;
-    d3.select("#total-schools").text(schools.length);
-    d3.select("#over-enrolled").text(over + " (" + Math.round(over / schools.length * 100) + "%)");
-  }
+  /* MARK: Data controls */
 
-  applyHeatmap() {
-    this.o.clusters.style("fill", cluster => this.capacity.getClusterColor(cluster));
-  }
-
-  start() {
-    this.data.download(this.main.bind(this));
-  }
-
-  main() {
-    this.draw();
+  /** Apply data to the visualization and statistics. */
+  apply() {
     this.applyHeatmap();
     this.applyStatistics();
   }
 
+  /** Color the clusters according to overcrowding. */
+  applyHeatmap() {
+    this.objects.clusters.style("fill", cluster => this.capacity.getClusterColor(cluster));
+  }
+
+  /** Fill in statistics on the overall view.*/
+  applyStatistics() {
+    let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
+    let schools = Object.values(this.capacity.ratios.schools);
+    let over = schools.filter(t => t[0] > t[1]).length;
+    d3.select("#net-enrollment").text(this.capacity.ratios.total[0] + " (" + enrollment + "%)");
+    d3.select("#net-capacity").text(this.capacity.ratios.total[1]);
+    d3.select("#total-schools").text(schools.length);
+    d3.select("#over-enrolled").text(over + " (" + Math.round(over / schools.length * 100) + "%)");
+  }
+
+  /* MARK: Interactivity */
+
+  /** Find the center and zoom for the state. */
+  viewCluster(cluster) {
+
+    /* Find the cluster and retrieve bounds. */
+    let x, y, w, h, k;
+    if (cluster && cluster !== this.selection.cluster) {
+      let centroid = this.renderer.path.centroid(cluster);
+      let bounds = this.renderer.path.bounds(cluster);
+      x = centroid[0], y = centroid[1];
+      w = bounds[1][0] - bounds[0][0], h = bounds[1][1] - bounds[0][1];
+      k = 1 / (1.5 * Math.max(w / W, h / H));
+      this.selection.cluster = cluster;
+
+    /* If selection is the same or cluster is null, zoom out. */
+    } else {
+      x = W / 2, y = H / 2, k = 1;
+      this.selection.cluster = null;
+    }
+
+    /* Set the path as active and zoom. */
+    this.renderer.g.selectAll("path")
+      .classed("background", this.selection.cluster && (cluster => cluster !== this.selection.cluster));
+    this.renderer.g.transition().duration(750)
+      .attr("transform", "translate(" + W/2 + "," + H/2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+      .style("stroke-W", 1.5 / k + "px");
+
+  }
+
+  /** Callback for selecting a cluster. */
   selectCluster(cluster) {
 
-    let x, y, w, h, k;
-    if (cluster && cluster !== this.d.cluster) {
+    if (cluster && cluster !== this.selection.cluster) {
       this.removeSchools();
       this.drawSchools(cluster["properties"]["id"]);
       this.clusterStatistics(cluster);
@@ -292,52 +344,31 @@ class Controller {
       this.removeSchools();
     }
 
-    /* Find the center and zoom for the state. */
-    if (cluster && cluster !== this.d.cluster) {
-      let centroid = this.r.path.centroid(cluster);
-      let bounds = this.r.path.bounds(cluster);
-      x = centroid[0];
-      y = centroid[1];
-      w = bounds[1][0] - bounds[0][0];
-      h = bounds[1][1] - bounds[0][1];
-      k = 1 / (1.5 * Math.max(w / W, h / H));
-      this.d.cluster = cluster;
-    } else {
-      x = W / 2;
-      y = H / 2;
-      k = 1;
-      this.d.cluster = null;
-    }
-
-    /* Set the path as active and zoom. */
-    this.r.g.selectAll("path").classed("background", this.d.cluster && (cluster => cluster !== this.d.cluster));
-    this.r.g.transition().duration(750)
-      .attr("transform", "translate(" + W/2 + "," + H/2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-      .style("stroke-W", 1.5 / k + "px");
+    this.viewCluster(cluster);
 
   }
 
   selectSchool(school) {
     if (school && school !== this.d.school) {
-      this.d.school = school;
+      this.selection.school = school;
       this.schoolStatistics(school);
       this.mode = MODE.SCHOOL;
     } else {
-      this.d.school = null;
+      this.selection.school = null;
       this.mode = MODE.CLUSTER;
-      this.clusterStatistics(this.d.cluster);
+      this.clusterStatistics(this.selection.cluster);
     }
 
-    this.r.g.selectAll("path").classed("active", this.d.school && (school => school === this.d.school));
+    this.renderer.g.selectAll("path").classed("active", this.d.school && (school => school === this.d.school));
   }
 
   clusterStatistics(cluster) {
     if (cluster === null) { d3.select("#current-item").text(""); return }
     d3.select("#current-item").text(cluster["properties"]["name"]);
     let clusterId = cluster["properties"]["id"];
-    d3.select("#item-capacity").text(this.c.clustersRaw[clusterId][1]);
-    d3.select("#item-enrollment").text(this.c.clustersRaw[clusterId][0] + " (" +
-      Math.round(100 * this.c.clusters[clusterId]) + "%)");
+    let ratio = this.capacity.ratios.clusters[clusterId]
+    d3.select("#item-capacity").text(ratio[1]);
+    d3.select("#item-enrollment").text(ratio[0] + " (" + Math.round(100 * ratio[0] / ratio[1]) + "%)");
   }
 
   schoolStatistics(school) {
