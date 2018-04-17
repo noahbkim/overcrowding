@@ -150,8 +150,8 @@ class CapacityPlugin extends DataPlugin {
 
         /* School ratios and scales, only because we're already iterating through. */
         this.ratios.schools[schoolId] = [enrollment, capacity];
-        this.scales.schools[0] = Math.min(this.scales.schools.min, enrollment / capacity);
-        this.scales.schools[0] = Math.max(this.scales.schools.max, enrollment / capacity);
+        this.scales.schools[0] = Math.min(this.scales.schools[0], enrollment / capacity);
+        this.scales.schools[1] = Math.max(this.scales.schools[1], enrollment / capacity);
 
         /* Cluster ratios. */
         if (!this.ratios.clusters.hasOwnProperty(clusterId))
@@ -228,6 +228,7 @@ class Controller {
 
   /** Center the renderer and draw the clusters. */
   draw() {
+    console.log("Drawing visualization...");
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawBorders();
@@ -276,6 +277,7 @@ class Controller {
 
   /** Apply data to the visualization and statistics. */
   apply() {
+    console.log("Applying data...");
     this.applyHeatmap();
     this.applyStatistics();
   }
@@ -306,14 +308,18 @@ class Controller {
     if (cluster && cluster !== this.selection.cluster) {
       let centroid = this.renderer.path.centroid(cluster);
       let bounds = this.renderer.path.bounds(cluster);
-      x = centroid[0], y = centroid[1];
-      w = bounds[1][0] - bounds[0][0], h = bounds[1][1] - bounds[0][1];
+      x = centroid[0];
+      y = centroid[1];
+      w = bounds[1][0] - bounds[0][0];
+      h = bounds[1][1] - bounds[0][1];
       k = 1 / (1.5 * Math.max(w / W, h / H));
       this.selection.cluster = cluster;
 
     /* If selection is the same or cluster is null, zoom out. */
     } else {
-      x = W / 2, y = H / 2, k = 1;
+      x = W / 2;
+      y = H / 2;
+      k = 1;
       this.selection.cluster = null;
     }
 
@@ -349,7 +355,7 @@ class Controller {
   }
 
   selectSchool(school) {
-    if (school && school !== this.d.school) {
+    if (school && school !== this.selection.school) {
       this.selection.school = school;
       this.schoolStatistics(school);
       this.mode = MODE.SCHOOL;
@@ -359,24 +365,25 @@ class Controller {
       this.clusterStatistics(this.selection.cluster);
     }
 
-    this.renderer.g.selectAll("path").classed("active", this.d.school && (school => school === this.d.school));
+    this.renderer.g.selectAll("path")
+      .classed("active", this.selection.school && (school => school === this.selection.school));
   }
 
   clusterStatistics(cluster) {
     if (cluster === null) { d3.select("#current-item").text(""); return }
-    d3.select("#current-item").text(cluster["properties"]["name"]);
     let clusterId = cluster["properties"]["id"];
-    let ratio = this.capacity.ratios.clusters[clusterId]
+    let ratio = this.capacity.ratios.clusters[clusterId];
+    d3.select("#current-item").text(cluster["properties"]["name"]);
     d3.select("#item-capacity").text(ratio[1]);
     d3.select("#item-enrollment").text(ratio[0] + " (" + Math.round(100 * ratio[0] / ratio[1]) + "%)");
   }
 
   schoolStatistics(school) {
-    d3.select("#current-item").text(school["properties"]["school"]);
     let schoolId = school["properties"]["s_id3"];
-    d3.select("#item-capacity").text(this.c.schoolsRaw[schoolId][1]);
-    d3.select("#item-enrollment").text(this.c.schoolsRaw[schoolId][0] + " (" +
-      Math.round(100 * this.c.schools[schoolId]) + "%)");
+    let ratio = this.capacity.ratios.schools[schoolId];
+    d3.select("#current-item").text(school["properties"]["school"]);
+    d3.select("#item-capacity").text(ratio[1]);
+    d3.select("#item-enrollment").text(ratio[0] + " (" + Math.round(100 * ratio[0] / ratio[1]) + "%)");
   }
 
 }
