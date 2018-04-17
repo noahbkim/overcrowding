@@ -50,6 +50,14 @@ class Renderer {
       .attr("height", H);
   }
 
+  /** Provide transforms relative to a position. */
+  scale(amount, coordinates) {
+    let c = this.projection(coordinates);
+    let x = c[0] * (1 - amount);
+    let y = c[1] * (1 - amount);
+    return "translate(" + x + "," + y + ")scale(" + amount + ")";
+  }
+
   /** Generate a teardrop path pointed at the current SVG coordinate. */
   teardrop(coordinates) {
     let c = this.projection(coordinates);
@@ -132,7 +140,10 @@ class CapacityPlugin extends DataPlugin {
     super(d3.csv, PREFIX + "data/capacity.csv");
     this.data = null;
     this.ratios =  {schools: {}, clusters: {}, total: [0, 0]};  // Ratios of enrollment to capacity
-    this.scales = {schools: [Infinity, -Infinity], clusters: [Infinity, -Infinity]};  // Min and max ratios
+    this.scales = {  // Min and max ratios
+      schools: [Infinity, -Infinity],
+      clusters: [Infinity, -Infinity],
+      enrollment: [Infinity, -Infinity]};
   }
 
   /** Compute capacity and enrollment. */
@@ -152,6 +163,8 @@ class CapacityPlugin extends DataPlugin {
         this.ratios.schools[schoolId] = [enrollment, capacity];
         this.scales.schools[0] = Math.min(this.scales.schools[0], enrollment / capacity);
         this.scales.schools[1] = Math.max(this.scales.schools[1], enrollment / capacity);
+        this.scales.enrollment[0] = Math.min(this.scales.enrollment[0], enrollment);
+        this.scales.enrollment[1] = Math.max(this.scales.enrollment[1], enrollment);
 
         /* Cluster ratios. */
         if (!this.ratios.clusters.hasOwnProperty(clusterId))
@@ -185,6 +198,13 @@ class CapacityPlugin extends DataPlugin {
     let scale = this.scales.clusters;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
     return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 0.5)";
+  }
+
+  /** Get a ratio size of a school. */
+  getSchoolSize(school) {
+    let enrollment = this.ratios.schools[school["properties"]["s_id3"]][0];
+    let scale = this.scales.enrollment;
+    return (enrollment - scale[0]) / (scale[1] - scale[0]) + 1 - 0.25;
   }
 
   /** Provide a heatmap color for a school. */
@@ -260,6 +280,8 @@ class Controller {
         s => s["properties"]["cluster"] === clusterId)).enter()
       .append("path")
         .attr("d", school => this.renderer.teardrop(school.geometry.coordinates))
+        .attr("transform", school => this.renderer.scale(
+          this.capacity.getSchoolSize(school), school.geometry.coordinates))
         .attr("class", "school")
         .style("stroke", school => this.capacity.getSchoolColor(school))
         .on("click", this.selectSchool.bind(this));
