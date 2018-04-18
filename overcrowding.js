@@ -91,7 +91,7 @@ class Gradient {
   interpolate(position) {
     let a = 0;
     let b = 1;
-    for (let i = 0; i < this.stops; i++) {
+    for (let i = 0; i < this.stops.length; i++) {
       if (this.stops[i] < position) {
         a = this.stops[i];
       } else if (this.stops[i] > position) {
@@ -103,9 +103,9 @@ class Gradient {
     let c = this.lookup[a];
     let d = this.lookup[b];
     return [
-      c[0] + s * (d[0] - c[0]),
-      c[1] + s * (d[1] - d[1]),
-      c[2] + s * (d[2] - d[2])];
+      Math.round(c[0] + s * (d[0] - c[0])),
+      Math.round(c[1] + s * (d[1] - c[1])),
+      Math.round(c[2] + s * (d[2] - c[2]))];
   }
 
   color(position, alpha) {
@@ -194,9 +194,12 @@ class CapacityPlugin extends DataPlugin {
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
     this.gradient = new Gradient()
-      .stop(0, [40, 167, 69])
-      .stop(0.5, [255, 193, 7])
-      .stop(1, [220, 53, 69])
+      //.stop(0, [40, 167, 69])
+      .stop(0, [148, 211, 162])
+      //.stop(0.5, [255, 193, 7])
+      .stop(0.5, [255, 224, 131])
+      //.stop(1, [220, 53, 69]);
+      .stop(1, [238, 154, 162]);
   }
 
   /** Compute capacity and enrollment. */
@@ -232,8 +235,9 @@ class CapacityPlugin extends DataPlugin {
       }
 
       /* Compute cluster ratios after because we have to wait for all ratios. */
-      this.scales.clusters[0] = 0.75;  // Math.min.apply(Math, Object.values(this.c.clusters));
-      this.scales.clusters[1] = Math.max.apply(Math, Object.values(this.ratios.clusters).map(x => x[0] / x[1]));
+      let ratios = Object.values(this.ratios.clusters).map(x => x[0] / x[1]);
+      this.scales.clusters[0] = Math.min.apply(Math, ratios);
+      this.scales.clusters[1] = Math.max.apply(Math, ratios);
     }
   }
 
@@ -250,7 +254,7 @@ class CapacityPlugin extends DataPlugin {
     let ratio = this.ratios.clusters[cluster["properties"]["id"]];
     let scale = this.scales.clusters;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
-    return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 0.5)";
+    return this.gradient.color(value, 1);
   }
 
   /** Generate an SVG gradient for the scale. */
@@ -356,10 +360,22 @@ class Controller {
     this.capacity.addClusterGradient(defs);
     let scale = this.renderer.svg.append("g");
     scale.append("rect")
-      .attr("x", 50).attr("y", H-60)
+      .attr("x", 50).attr("y", H-50)
       .attr("width", 200).attr("height", 10)
       .attr("fill", "url(#clusterGradient)");
+    scale.append("text")
+      .attr("x", 50).attr("y", H-60)
+      .attr("font-size", "12px")
+      .attr("fill", "#AAA")
+      .text(Math.round(this.capacity.scales.clusters[0] * 100) + "%");
+    scale.append("text")
+      .attr("x", 250).attr("y", H-60)
+      .attr("font-size", "12px")
+      .attr("fill", "#AAA")
+      .attr("text-anchor", "end")
+      .text(Math.round(this.capacity.scales.clusters[1] * 100) + "%");
   }
+
 
   /** Remove the active schools. */
   removeSchools() {
