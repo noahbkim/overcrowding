@@ -270,7 +270,7 @@ class CapacityPlugin extends DataPlugin {
     let ratio = this.ratios.schools[school["properties"]["s_id3"]];
     if (!ratio) return 1;
     let scale = this.scales.enrollment;
-    return (ratio[0] - scale[0]) / (scale[1] - scale[0]) + 1 - 0.25;
+    return (ratio[0] - scale[0]) / (scale[1] - scale[0]) + 1 - 0.225;
   }
 
   /** Provide a heatmap color for a school. */
@@ -344,15 +344,30 @@ class Controller {
   drawSchools(clusterId) {
     this.objects.schools = this.renderer.g.append("g").attr("class", "schools")
       .selectAll("path")
-      .data(this.data.schools.geo.features.filter(
-        s => s["properties"]["cluster"] === clusterId)).enter()
+
+      /* Filter by schools in cluster and sort by y position to make natural overlap. */
+      .data(this.data.schools.geo.features
+        .filter(s => s["properties"]["cluster"] === clusterId)
+        .sort((a, b) => b.geometry.coordinates[1] - a.geometry.coordinates[1])).enter()
+
+      /* Draw each school. */
       .append("path")
         .attr("d", school => this.renderer.teardrop(school.geometry.coordinates))
         .attr("transform", school => this.renderer.scale(
           this.capacity.getSchoolSize(school), school.geometry.coordinates))
         .attr("class", "school")
-        .style("stroke", school => this.capacity.getSchoolColor(school))
+        .style("stroke", "black")
+        .style("stroke-width", school => 1 / this.capacity.getSchoolSize(school))
+        .style("fill",  school => this.capacity.getSchoolColor(school))
         .on("click", this.selectSchool.bind(this));
+  }
+
+  /** Remove the active schools. */
+  removeSchools() {
+    if (this.objects.schools) {
+      this.objects.schools.remove();
+      this.objects.schools = null;
+    }
   }
 
   drawScale() {
@@ -374,15 +389,6 @@ class Controller {
       .attr("fill", "#AAA")
       .attr("text-anchor", "end")
       .text(Math.round(this.capacity.scales.clusters[1] * 100) + "%");
-  }
-
-
-  /** Remove the active schools. */
-  removeSchools() {
-    if (this.objects.schools) {
-      this.objects.schools.remove();
-      this.objects.schools = null;
-    }
   }
 
   /* MARK: Data controls */
