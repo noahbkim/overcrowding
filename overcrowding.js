@@ -194,11 +194,14 @@ class CapacityPlugin extends DataPlugin {
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
     this.gradient = new Gradient()
-      //.stop(0, [40, 167, 69])
+      // .stop(0, [40, 167, 69])
+      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:28A745:4:rgbd
       .stop(0, [126, 202, 143])
-      //.stop(0.5, [255, 193, 7])
+      // .stop(0.5, [255, 193, 7])
+      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:FFC107:4:rgbd
       .stop(0.5, [255, 218, 106])
-      //.stop(1, [220, 53, 69]);
+      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:DC3545:4:rgbd
+      // .stop(1, [220, 53, 69]);
       .stop(1, [234, 134, 143]);
   }
 
@@ -254,7 +257,7 @@ class CapacityPlugin extends DataPlugin {
     let ratio = this.ratios.clusters[cluster["properties"]["id"]];
     let scale = this.scales.clusters;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
-    return this.gradient.color(value, 0.9);
+    return this.gradient.color(value, 1);
   }
 
   /** Generate an SVG gradient for the scale. */
