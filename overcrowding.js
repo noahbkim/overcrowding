@@ -195,11 +195,11 @@ class CapacityPlugin extends DataPlugin {
       enrollment: [Infinity, -Infinity]};
     this.gradient = new Gradient()
       //.stop(0, [40, 167, 69])
-      .stop(0, [148, 211, 162])
+      .stop(0, [126, 202, 143])
       //.stop(0.5, [255, 193, 7])
-      .stop(0.5, [255, 224, 131])
+      .stop(0.5, [255, 218, 106])
       //.stop(1, [220, 53, 69]);
-      .stop(1, [238, 154, 162]);
+      .stop(1, [234, 134, 143]);
   }
 
   /** Compute capacity and enrollment. */
@@ -254,7 +254,7 @@ class CapacityPlugin extends DataPlugin {
     let ratio = this.ratios.clusters[cluster["properties"]["id"]];
     let scale = this.scales.clusters;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
-    return this.gradient.color(value, 1);
+    return this.gradient.color(value, 0.9);
   }
 
   /** Generate an SVG gradient for the scale. */
@@ -279,7 +279,7 @@ class CapacityPlugin extends DataPlugin {
     if (!ratio) return "rgba(144, 144, 144, 1)";
     let scale = this.scales.schools;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
-    return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 1)";
+    return this.gradient.color(value);
   }
 
 }
@@ -418,13 +418,12 @@ class Controller {
     /* Find the cluster and retrieve bounds. */
     let x, y, w, h, k;
     if (cluster && cluster !== this.selection.cluster) {
-      let centroid = this.renderer.path.centroid(cluster);
       let bounds = this.renderer.path.bounds(cluster);
-      x = centroid[0];
-      y = centroid[1];
+      x = (bounds[1][0] + bounds[0][0]) / 2;
+      y = (bounds[1][1] + bounds[0][1]) / 2;
       w = bounds[1][0] - bounds[0][0];
       h = bounds[1][1] - bounds[0][1];
-      k = 1 / (1.5 * Math.max(w / W, h / H));
+      k = 1 / (1.2 * Math.max(w / W, h / H));
       this.selection.cluster = cluster;
 
     /* If selection is the same or cluster is null, zoom out. */
