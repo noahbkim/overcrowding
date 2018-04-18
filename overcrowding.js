@@ -73,6 +73,55 @@ class Renderer {
 }
 
 
+/** A gradient utility for scales. */
+class Gradient {
+
+  constructor() {
+    this.stops = [];
+    this.lookup = {};
+  }
+
+  stop(position, color) {
+    this.stops.push(position);
+    this.stops.sort();
+    this.lookup[position] = color;
+    return this;
+  }
+
+  interpolate(position) {
+    let a = 0;
+    let b = 1;
+    for (let i = 0; i < this.stops; i++) {
+      if (this.stops[i] < position) {
+        a = this.stops[i];
+      } else if (this.stops[i] > position) {
+        b = this.stops[i];
+        break;
+      } else return this.lookup[position];
+    }
+    let s = (position - a) / (b - a);
+    let c = this.lookup[a];
+    let d = this.lookup[b];
+    return [
+      c[0] + s * (d[0] - c[0]),
+      c[1] + s * (d[1] - d[1]),
+      c[2] + s * (d[2] - d[2])];
+  }
+
+  color(position, alpha) {
+    return "rgba(" + this.interpolate(position).concat(alpha || 1).join(", ") + ")";
+  }
+
+  svg(gradient, alpha) {
+    for (let stop of this.stops)
+      gradient.append("stop")
+        .attr("offset", stop * 100 + "%")
+        .attr("style", "stop-color: rgba(" + this.lookup[stop].concat(alpha || 1).join(", ") + ");");
+  }
+
+}
+
+
 /** The data manager for the visualization.
  *
  * The geography data is the central focus of the project, so it is
@@ -144,6 +193,10 @@ class CapacityPlugin extends DataPlugin {
       schools: [Infinity, -Infinity],
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
+    this.gradient = new Gradient()
+      .stop(0, [40, 167, 69])
+      .stop(0.5, [255, 193, 7])
+      .stop(1, [220, 53, 69])
   }
 
   /** Compute capacity and enrollment. */
@@ -200,16 +253,26 @@ class CapacityPlugin extends DataPlugin {
     return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 0.5)";
   }
 
+  /** Generate an SVG gradient for the scale. */
+  addClusterGradient(defs) {
+    this.gradient.svg(defs.append("linearGradient")
+      .attr("id", "clusterGradient")
+      .attr("x1", "0%").attr("x2", "100%")
+      .attr("y1", "0%").attr("y2", "0%"));
+  }
+
   /** Get a ratio size of a school. */
   getSchoolSize(school) {
-    let enrollment = this.ratios.schools[school["properties"]["s_id3"]][0];
+    let ratio = this.ratios.schools[school["properties"]["s_id3"]];
+    if (!ratio) return 1;
     let scale = this.scales.enrollment;
-    return (enrollment - scale[0]) / (scale[1] - scale[0]) + 1 - 0.25;
+    return (ratio[0] - scale[0]) / (scale[1] - scale[0]) + 1 - 0.25;
   }
 
   /** Provide a heatmap color for a school. */
   getSchoolColor(school) {
     let ratio = this.ratios.schools[school["properties"]["s_id3"]];
+    if (!ratio) return "rgba(144, 144, 144, 1)";
     let scale = this.scales.schools;
     let value = (ratio[0] / ratio[1] - scale[0]) / (scale[1] - scale[0]);
     return "rgba(" + Math.round(255 * value) + ", " + Math.round(255 * (1 - value)) + ", 0, 1)";
@@ -252,6 +315,7 @@ class Controller {
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawBorders();
+    this.drawScale();
   }
 
   /** Draw the county clusters, bind the click events. */
@@ -285,6 +349,16 @@ class Controller {
         .attr("class", "school")
         .style("stroke", school => this.capacity.getSchoolColor(school))
         .on("click", this.selectSchool.bind(this));
+  }
+
+  drawScale() {
+    let defs = this.renderer.svg.append("defs");
+    this.capacity.addClusterGradient(defs);
+    let scale = this.renderer.svg.append("g");
+    scale.append("rect")
+      .attr("x", 50).attr("y", H-60)
+      .attr("width", 200).attr("height", 10)
+      .attr("fill", "url(#clusterGradient)");
   }
 
   /** Remove the active schools. */
