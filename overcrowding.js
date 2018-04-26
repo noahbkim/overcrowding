@@ -367,6 +367,10 @@ class Controller {
       .datum(topojson.mesh(this.data.clusters, this.data.clusters.objects.clusters, (a, b) => a !== b))
       .attr("d", this.renderer.path)
       .attr("class", "border");
+    this.renderer.g.append("path")
+      .datum(topojson.merge(this.data.clusters, this.data.clusters.objects.clusters.geometries))
+      .attr("d", this.renderer.path)
+      .attr("class", "border")
   }
 
   /** Draw schools for a particular cluster. */

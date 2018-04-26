@@ -76,7 +76,7 @@ body {
 
 .border {
   fill: none;
-  stroke: #FFF;
+  stroke: #222;
   stroke-width: 1.5px;
   stroke-linejoin: round;
   stroke-linecap: round;
