@@ -122,6 +122,22 @@ class Gradient {
 }
 
 
+/** Binned gradient. */
+class BinnedGradient {
+
+  constructor(colors) {
+    this.colors = colors;
+  }
+
+  color(position, alpha) {
+    let index = Math.floor(position * this.colors.length);
+    if (index === this.colors.length) index--;
+    return "rgba(" + this.colors[index].concat(alpha || 1).join(", ") + ")";
+  }
+
+}
+
+
 /** The data manager for the visualization.
  *
  * The geography data is the central focus of the project, so it is
@@ -193,7 +209,7 @@ class CapacityPlugin extends DataPlugin {
       schools: [Infinity, -Infinity],
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
-    this.gradient = new Gradient()
+    /*this.gradient = new Gradient()
       // .stop(0, [40, 167, 69])
       // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:28A745:4:rgbd
       .stop(0, [126, 202, 143])
@@ -202,7 +218,17 @@ class CapacityPlugin extends DataPlugin {
       .stop(0.5, [255, 218, 106])
       // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:DC3545:4:rgbd
       // .stop(1, [220, 53, 69]);
-      .stop(1, [234, 134, 143]);
+      .stop(1, [234, 134, 143]);*/
+    this.gradient = new BinnedGradient([
+      [247, 252, 253],
+      [229, 245, 249],
+      [204, 236, 230],
+      [153, 216, 201],
+      [102, 194, 164],
+      [65, 174, 118],
+      [35, 139, 69],
+      [0, 109, 44],
+      [0, 68, 27]]);
   }
 
   /** Compute capacity and enrollment. */
@@ -322,7 +348,7 @@ class Controller {
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawBorders();
-    this.drawScale();
+    //this.drawScale();
   }
 
   /** Draw the county clusters, bind the click events. */
