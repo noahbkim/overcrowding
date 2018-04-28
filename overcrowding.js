@@ -19,6 +19,53 @@ const MODE = {NONE: 0, SCHOOL: 1, CLUSTER: 2};
 const PREFIX = ""; //"overcrowding/"
 
 
+/* Teardrop marker SVG path. */
+function teardrop(c) {
+  return [
+    "M ", c[0] + "," + c[1],
+    "c -5,-7 -5,-14 -5,-15",
+    "c 0,-7 10,-7 10,0",
+    "c 0,1 0,8 -5,15",
+    "z"
+  ].join(" ");
+}
+
+function circle(c) {
+  return [
+    "M", (c[0] - 5) + "," + c[1],
+    "a 5,5 0 1,0 10 0",
+    "a -5,5 0 1,0 -10 0",
+    "z"
+  ].join(" ");
+}
+
+function triangle(c) {
+  return [
+    "M", c[0] + "," + (c[1] + 6.5),
+    "l 5,-9.75",
+    "l -10,0",
+    "z"
+  ].join(" ");
+}
+
+function diamond(c) {
+  return [
+    "M", c[0] + "," + (c[1] + 6),
+    "l 6,-6",
+    "l -6,-6",
+    "l -6,6",
+    "z"
+  ].join(" ");
+}
+
+
+const MARK = {
+  ES: circle,
+  MS: triangle,
+  HS: diamond
+};
+
+
 /** A wrapper for SVG controls. */
 class Renderer {
 
@@ -58,16 +105,10 @@ class Renderer {
     return "translate(" + x + "," + y + ")scale(" + amount + ")";
   }
 
-  /** Generate a teardrop path pointed at the current SVG coordinate. */
-  teardrop(coordinates) {
+  /** Generate a mark path pointed at the current SVG coordinate. */
+  mark(marker, coordinates) {
     let c = this.projection(coordinates);
-    return [
-      "M ", c[0] + "," + c[1],
-      "c -5,-7 -5,-14 -5,-15",
-      "c 0,-7 10,-7 10,0",
-      "c 0,1 0,8 -5,15",
-      "z"
-    ].join(" ");
+    return (marker || teardrop)(c) ;
   }
 
 }
@@ -227,16 +268,6 @@ class CapacityPlugin extends DataPlugin {
       schools: [Infinity, -Infinity],
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
-    /*this.gradient = new Gradient()
-      // .stop(0, [40, 167, 69])
-      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:28A745:4:rgbd
-      .stop(0, [126, 202, 143])
-      // .stop(0.5, [255, 193, 7])
-      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:FFC107:4:rgbd
-      .stop(0.5, [255, 218, 106])
-      // https://meyerweb.com/eric/tools/color-blend/#FFFFFF:DC3545:4:rgbd
-      // .stop(1, [220, 53, 69]);
-      .stop(1, [234, 134, 143]);*/
     this.gradient = new BinnedGradient([
       [247, 252, 253],
       [229, 245, 249],
@@ -403,7 +434,8 @@ class Controller {
 
       /* Draw each school. */
       .append("path")
-        .attr("d", school => this.renderer.teardrop(school.geometry.coordinates))
+        .attr("d", school => this.renderer.mark(
+          MARK[school.properties.schooltype], school.geometry.coordinates))
         .attr("transform", school => this.renderer.scale(
           this.capacity.getSchoolSize(school), school.geometry.coordinates))
         .attr("class", "school")
