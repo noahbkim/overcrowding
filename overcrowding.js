@@ -132,7 +132,25 @@ class BinnedGradient {
   color(position, alpha) {
     let index = Math.floor(position * this.colors.length);
     if (index === this.colors.length) index--;
-    return "rgba(" + this.colors[index].concat(alpha || 1).join(", ") + ")";
+    return this.rgba(this.colors[index]);
+  }
+
+  rgba(rgb, alpha) {
+    return "rgba(" + rgb.concat(alpha || 1).join(", ") + ")";
+  }
+
+  draw(g, x, y, w, h, a) {
+    g.append("rect").attr("x", x).attr("y", y).attr("width", w).attr("height", h).style("outline", "black");
+    x += 1;
+    y += 1;
+    w -= 2;
+    h -= 2;
+    let l = w / this.colors.length;
+    for (let i = 0; i < this.colors.length; i++) {
+      g.append("rect").attr("x", Math.floor(x + i*l)).attr("y", y)
+        .attr("width", Math.ceil(l)).attr("height", h)
+        .style("fill", this.rgba(this.colors[i]));
+    }
   }
 
 }
@@ -348,7 +366,7 @@ class Controller {
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawBorders();
-    //this.drawScale();
+    this.drawScale();
   }
 
   /** Draw the county clusters, bind the click events. */
@@ -404,20 +422,15 @@ class Controller {
   }
 
   drawScale() {
-    let defs = this.renderer.svg.append("defs");
-    this.capacity.addClusterGradient(defs);
     let scale = this.renderer.svg.append("g");
-    scale.append("rect")
-      .attr("x", 50).attr("y", H-50)
-      .attr("width", 200).attr("height", 10)
-      .attr("fill", "url(#clusterGradient)");
+    this.capacity.gradient.draw(scale, 50, H-50, 200, 10);
     scale.append("text")
-      .attr("x", 50).attr("y", H-60)
+      .attr("x", 50).attr("y", H-55)
       .attr("font-size", "12px")
       .attr("fill", "#AAA")
       .text(Math.round(this.capacity.scales.clusters[0] * 100) + "%");
     scale.append("text")
-      .attr("x", 250).attr("y", H-60)
+      .attr("x", 250).attr("y", H-55)
       .attr("font-size", "12px")
       .attr("fill", "#AAA")
       .attr("text-anchor", "end")
