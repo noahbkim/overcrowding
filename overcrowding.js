@@ -306,10 +306,11 @@ class CapacityPlugin extends DataPlugin {
 
   /** Get a ratio size of a school. */
   getSchoolSize(school) {
+    let base = 0.6;
     let ratio = this.ratios.schools[school["properties"]["s_id3"]];
-    if (!ratio) return 1;
+    if (!ratio) return base;
     let scale = this.scales.enrollment;
-    return (ratio[0] - scale[0]) / (scale[1] - scale[0]) + 1 - 0.225;
+    return base * (ratio[0] - scale[0]) / (scale[1] - scale[0]) + 1 - 0.225;
   }
 
   /** Provide a heatmap color for a school. */
@@ -357,6 +358,7 @@ class Controller {
     console.log("Drawing visualization...");
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
+    this.drawCompass();
     // this.drawBorders();
     this.drawScale();
   }
@@ -412,6 +414,20 @@ class Controller {
       this.objects.schools.remove();
       this.objects.schools = null;
     }
+  }
+
+  /** Draw a compass rose in the top left of the visualization. */
+  drawCompass() {
+    let compass = this.renderer.svg.append("g");
+    compass.append("polygon")
+      .attr("points", "51,55 54.5,50 58,55")
+      .style("fill", this.capacity.gradient.color(1));
+    compass.append("text")
+      .attr("x", 50).attr("y", 67)
+      .attr("font-size", "12px")
+      .attr("fill", "#AAA")
+      .text("N")
+      .style("font", "Arial")
   }
 
   drawScale() {
@@ -526,7 +542,7 @@ class Controller {
   }
 
   overviewStatistics() {
-    
+
   }
 
   clusterStatistics(cluster) {
