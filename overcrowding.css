@@ -13,7 +13,7 @@ body {
   background: linear-gradient(to right, #999, #EEE);
   background: -webkit-linear-gradient(left, #CCC, #EEE 2%);
   box-sizing: border-box;
-  padding: 1em 1.5em;
+  padding: 15px 24px;
   color: #393D3F;
   overflow-y: scroll;
 }
@@ -25,29 +25,20 @@ body {
 
 #sidebar h1 {
   font-size: 24px;
-  margin-top: 0.25em;
+  margin-top: 3px;
   margin-bottom: 0.25em;
 }
 
 #sidebar h2 {
   font-size: 20px;
   margin-top: 0.5em;
-  margin-bottom: 0.15em;
+  margin-bottom: 0.25em;
 }
 
-#sidebar h2 + p {
-  margin-top: 0.1em;
-}
-
-#sidebar h2:empty + p {
-  display: none;
-}
-
-
-#sidebar p.subtitle {
+#sidebar p {
   margin: 0;
   padding: 0;
-  font-style: italic;
+  line-height: 125%;
 }
 
 #sidebar a {
@@ -56,9 +47,9 @@ body {
   color: inherit;
 }
 
-#sidebar p {
-  line-height: 125%;
-}
+
+
+/** Visualization. */
 
 .background {
   fill: #FFF;

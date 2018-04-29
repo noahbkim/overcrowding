@@ -18,6 +18,10 @@ const MODE = {NONE: 0, SCHOOL: 1, CLUSTER: 2};
 /* URL prefixes. */
 const PREFIX = ""; //"overcrowding/"
 
+/* Grab the UI for convenience. */
+const title = d3.select("#title");
+const report = d3.select("#report");
+
 
 /* Teardrop marker SVG path. */
 function teardrop(c) { return "M " + c[0] + "," + c[1] + " c -5,-7 -5,-14 -5,-15 c 0,-7 10,-7 10,0 c 0,1 0,8 -5,15 z" }
@@ -335,6 +339,8 @@ class Controller {
     this.renderer = new Renderer(d3.select("#overcrowding").append("svg").attr("width", W).attr("height", H));
     this.objects = {county: null, clusters: null, schools: null};  // drawn objects
     this.selection = {cluster: null, school: null};
+    this.overlay = this.renderer.svg.append("g");
+    this.hover = null;
     this.mode = MODE.NONE;
   }
 
@@ -359,6 +365,7 @@ class Controller {
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
     this.drawCompass();
+    this.drawHover();
     // this.drawBorders();
     this.drawScale();
   }
@@ -418,11 +425,10 @@ class Controller {
 
   /** Draw a compass rose in the top left of the visualization. */
   drawCompass() {
-    let compass = this.renderer.svg.append("g");
-    compass.append("polygon")
+    this.overlay.append("polygon")
       .attr("points", "51,55 54.5,50 58,55")
       .style("fill", this.capacity.gradient.color(1));
-    compass.append("text")
+    this.overlay.append("text")
       .attr("x", 50).attr("y", 67)
       .attr("font-size", "12px")
       .attr("fill", "#AAA")
@@ -430,18 +436,30 @@ class Controller {
       .style("font", "Arial")
   }
 
+  /** Draw the text element for hovered items. */
+  drawHover() {
+    this.hover = this.overlay.append("text")
+      .attr("x", W-25).attr("y", 40)
+      .style("font-size", "22.5px")
+      .attr("fill", "#AAA")
+      .attr("text-anchor", "end")
+      .text("Test")
+  }
+
+
+  /** Draw the capacity scale on the bottom left. */
   drawScale() {
     let scale = this.renderer.svg.append("g");
     this.capacity.gradient.draw(scale, 50, H-50, 200, 10);
     scale.append("text")
       .attr("x", 50).attr("y", H-55)
-      .attr("font-size", "12px")
-      .attr("fill", "#AAA")
+      .style("font-size", "12px")
+      .style("fill", "#AAA")
       .text(Math.round(this.capacity.scales.clusters[0] * 100) + "%");
     scale.append("text")
       .attr("x", 250).attr("y", H-55)
-      .attr("font-size", "12px")
-      .attr("fill", "#AAA")
+      .style("font-size", "12px")
+      .style("fill", "#AAA")
       .attr("text-anchor", "end")
       .text(Math.round(this.capacity.scales.clusters[1] * 100) + "%");
   }
@@ -452,23 +470,12 @@ class Controller {
   apply() {
     console.log("Applying data...");
     this.applyHeatmap();
-    this.applyStatistics();
+    this.overallStatistics();
   }
 
   /** Color the clusters according to overcrowding. */
   applyHeatmap() {
     this.objects.clusters.style("fill", cluster => this.capacity.getClusterColor(cluster));
-  }
-
-  /** Fill in statistics on the overall view.*/
-  applyStatistics() {
-    let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
-    let schools = Object.values(this.capacity.ratios.schools);
-    let over = schools.filter(t => t[0] > t[1]).length;
-    d3.select("#net-enrollment").text(this.capacity.ratios.total[0] + " (" + enrollment + "%)");
-    d3.select("#net-capacity").text(this.capacity.ratios.total[1]);
-    d3.select("#total-schools").text(schools.length);
-    d3.select("#over-enrolled").text(over + " (" + Math.round(over / schools.length * 100) + "%)");
   }
 
   /* MARK: Interactivity */
@@ -541,8 +548,19 @@ class Controller {
       .classed("active", this.selection.school && (school => school === this.selection.school));
   }
 
-  overviewStatistics() {
 
+  /** Fill in statistics on the overall view.*/
+  overallStatistics() {
+    let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
+    let schools = Object.values(this.capacity.ratios.schools);
+    let over = schools.filter(t => t[0] > t[1]).length;
+    title.html("Montgomery County");
+    report.html([
+      "<h2>Capacity</h2>" +
+      "Capacity: " + this.capacity.ratios.total[0] + " (" + enrollment + "%)",
+      "Enrollment: " + this.capacity.ratios.total[1],
+      "Total schools: " + schools.length,
+      "Over-enrolled: " + over + " (" + Math.round(over / schools.length * 100) + "%)"].join("<br>"));
   }
 
   clusterStatistics(cluster) {
