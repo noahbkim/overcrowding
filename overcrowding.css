@@ -86,10 +86,14 @@ body {
 .cluster {
   fill: #AAA;
   background-clip: content-box;
-  stroke: transparent;
-  stroke-width: 2px;
+  stroke: black;
+  stroke-width: 1px;
   transition: fill 0.5s ease;
 }
+
+/* .cluster:hover {
+  stroke-width: 1.5px;
+} */
 
 .cluster.background {
   fill: #DDD !important;
@@ -97,13 +101,13 @@ body {
 
 .school {
   /*stroke: black;*/
-  stroke-width: 1.5px;
+  stroke-width: 1px;
   fill: transparent;
   pointer-events: all;
 }
 
 .school:hover {
-  stroke-width: 2.5px;
+  stroke-width: 1.5px !important;
 }
 
 .school.active {

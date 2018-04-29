@@ -20,50 +20,11 @@ const PREFIX = ""; //"overcrowding/"
 
 
 /* Teardrop marker SVG path. */
-function teardrop(c) {
-  return [
-    "M ", c[0] + "," + c[1],
-    "c -5,-7 -5,-14 -5,-15",
-    "c 0,-7 10,-7 10,0",
-    "c 0,1 0,8 -5,15",
-    "z"
-  ].join(" ");
-}
-
-function circle(c) {
-  return [
-    "M", (c[0] - 5) + "," + c[1],
-    "a 5,5 0 1,0 10 0",
-    "a -5,5 0 1,0 -10 0",
-    "z"
-  ].join(" ");
-}
-
-function triangle(c) {
-  return [
-    "M", c[0] + "," + (c[1] + 6.5),
-    "l 5,-9.75",
-    "l -10,0",
-    "z"
-  ].join(" ");
-}
-
-function diamond(c) {
-  return [
-    "M", c[0] + "," + (c[1] + 6),
-    "l 6,-6",
-    "l -6,-6",
-    "l -6,6",
-    "z"
-  ].join(" ");
-}
-
-
-const MARK = {
-  ES: circle,
-  MS: triangle,
-  HS: diamond
-};
+function teardrop(c) { return "M " + c[0] + "," + c[1] + " c -5,-7 -5,-14 -5,-15 c 0,-7 10,-7 10,0 c 0,1 0,8 -5,15 z" }
+function circle(c) { return "M " + (c[0] - 5) + "," + c[1] + " a 5,5 0 1,0 10 0 a -5,5 0 1,0 -10 0 z" }
+function triangle(c) { return "M " + c[0] + "," + (c[1] + 6.5) + " l 5,-9.75 l -10,0 z" }
+function diamond(c) { return "M " + c[0] + "," + (c[1] + 6) + " l 6,-6 l -6,-6 l -6,6 z" }
+const MARK = {ES: circle, MS: triangle, HS: diamond};
 
 
 /** A wrapper for SVG controls. */
@@ -269,15 +230,15 @@ class CapacityPlugin extends DataPlugin {
       clusters: [Infinity, -Infinity],
       enrollment: [Infinity, -Infinity]};
     this.gradient = new BinnedGradient([
-      [247, 252, 253],
-      [229, 245, 249],
-      [204, 236, 230],
-      [153, 216, 201],
-      [102, 194, 164],
-      [65, 174, 118],
-      [35, 139, 69],
-      [0, 109, 44],
-      [0, 68, 27]]);
+      [247,252,240],
+      [224,243,219],
+      [204,235,197],
+      [168,221,181],
+      [123,204,196],
+      [78,179,211],
+      [43,140,190],
+      [8,104,172],
+      [8,64,129]]);
   }
 
   /** Compute capacity and enrollment. */
@@ -396,7 +357,7 @@ class Controller {
     console.log("Drawing visualization...");
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
-    this.drawBorders();
+    // this.drawBorders();
     this.drawScale();
   }
 
@@ -562,6 +523,10 @@ class Controller {
 
     this.renderer.g.selectAll("path")
       .classed("active", this.selection.school && (school => school === this.selection.school));
+  }
+
+  overviewStatistics() {
+    
   }
 
   clusterStatistics(cluster) {
