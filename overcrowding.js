@@ -364,7 +364,7 @@ class Controller {
     console.log("Drawing visualization...");
     this.renderer.center(this.renderer.path.bounds(this.data.clusters.geo));
     this.drawClusters();
-    this.drawCompass();
+    // this.drawCompass();
     this.drawHover();
     // this.drawBorders();
     this.drawScale();
@@ -439,10 +439,10 @@ class Controller {
   /** Draw the text element for hovered items. */
   drawHover() {
     this.hover = this.overlay.append("text")
-      .attr("x", W-25).attr("y", 40)
+      .attr("x", 22).attr("y", 40)
       .style("font-size", "22.5px")
       .attr("fill", "#AAA")
-      .attr("text-anchor", "end")
+      .attr("text-anchor", "start")
       .text("Test")
   }
 
@@ -450,14 +450,14 @@ class Controller {
   /** Draw the capacity scale on the bottom left. */
   drawScale() {
     let scale = this.renderer.svg.append("g");
-    this.capacity.gradient.draw(scale, 50, H-50, 200, 10);
+    this.capacity.gradient.draw(scale, 35, H-38, 200, 10);
     scale.append("text")
-      .attr("x", 50).attr("y", H-55)
+      .attr("x", 35).attr("y", H-43)
       .style("font-size", "12px")
       .style("fill", "#AAA")
       .text(Math.round(this.capacity.scales.clusters[0] * 100) + "%");
     scale.append("text")
-      .attr("x", 250).attr("y", H-55)
+      .attr("x", 235).attr("y", H-43)
       .style("font-size", "12px")
       .style("fill", "#AAA")
       .attr("text-anchor", "end")
@@ -554,7 +554,7 @@ class Controller {
     let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
     let schools = Object.values(this.capacity.ratios.schools);
     let over = schools.filter(t => t[0] > t[1]).length;
-    title.html("Montgomery County");
+    title.text("Montgomery County");
     report.html([
       "<h2>Capacity</h2>" +
       "Capacity: " + this.capacity.ratios.total[0] + " (" + enrollment + "%)",
