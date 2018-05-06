@@ -377,7 +377,8 @@ class Controller {
       .data(this.data.clusters.geo.features).enter().append("path")
       .attr("d", this.renderer.path)
       .attr("class", "cluster")
-      .on("click", this.selectCluster.bind(this));
+      .on("click", this.selectCluster.bind(this))
+      .on("mouseenter", this.hoverCluster.bind(this));
   }
 
   /** Draw borders between the cluster regions. */
@@ -412,7 +413,8 @@ class Controller {
         .style("stroke", "black")
         .style("stroke-width", school => 1 / this.capacity.getSchoolSize(school))
         .style("fill",  school => this.capacity.getSchoolColor(school))
-        .on("click", this.selectSchool.bind(this));
+        .on("click", this.selectSchool.bind(this))
+        .on("mouseenter", this.hoverSchool.bind(this));
   }
 
   /** Remove the active schools. */
@@ -421,19 +423,6 @@ class Controller {
       this.objects.schools.remove();
       this.objects.schools = null;
     }
-  }
-
-  /** Draw a compass rose in the top left of the visualization. */
-  drawCompass() {
-    this.overlay.append("polygon")
-      .attr("points", "51,55 54.5,50 58,55")
-      .style("fill", this.capacity.gradient.color(1));
-    this.overlay.append("text")
-      .attr("x", 50).attr("y", 67)
-      .attr("font-size", "12px")
-      .attr("fill", "#AAA")
-      .text("N")
-      .style("font", "Arial")
   }
 
   /** Draw the text element for hovered items. */
@@ -445,7 +434,6 @@ class Controller {
       .attr("text-anchor", "start")
       .text("Test")
   }
-
 
   /** Draw the capacity scale on the bottom left. */
   drawScale() {
@@ -462,6 +450,19 @@ class Controller {
       .style("fill", "#AAA")
       .attr("text-anchor", "end")
       .text(Math.round(this.capacity.scales.clusters[1] * 100) + "%");
+  }
+
+  /** Draw a compass rose in the top left of the visualization. */
+  drawCompass() {
+    this.overlay.append("polygon")
+      .attr("points", "51,55 54.5,50 58,55")
+      .style("fill", this.capacity.gradient.color(1));
+    this.overlay.append("text")
+      .attr("x", 50).attr("y", 67)
+      .attr("font-size", "12px")
+      .attr("fill", "#AAA")
+      .text("N")
+      .style("font", "Arial")
   }
 
   /* MARK: Data controls */
@@ -548,6 +549,13 @@ class Controller {
       .classed("active", this.selection.school && (school => school === this.selection.school));
   }
 
+  hoverCluster(cluster) {
+    this.hover.text(cluster["properties"]["name"])
+  }
+
+  hoverSchool(school) {
+    this.hover.text(school["properties"]["school"])
+  }
 
   /** Fill in statistics on the overall view.*/
   overallStatistics() {
