@@ -568,24 +568,33 @@ class Controller {
       "Capacity: " + this.capacity.ratios.total[0] + " (" + enrollment + "%)",
       "Enrollment: " + this.capacity.ratios.total[1],
       "Total schools: " + schools.length,
-      "Over-enrolled: " + over + " (" + Math.round(over / schools.length * 100) + "%)"].join("<br>"));
+      "Over-enrolled: " + over + " (" + Math.round(over / schools.length * 100) + "%)"
+    ].join("<br>"));
   }
 
   clusterStatistics(cluster) {
-    if (cluster === null) { d3.select("#current-item").text(""); return }
+    if (cluster === null) return;
     let clusterId = cluster["properties"]["id"];
     let ratio = this.capacity.ratios.clusters[clusterId];
-    d3.select("#current-item").text(cluster["properties"]["name"]);
-    d3.select("#item-capacity").text(ratio[1]);
-    d3.select("#item-enrollment").text(ratio[0] + " (" + Math.round(100 * ratio[0] / ratio[1]) + "%)");
+    title.text(cluster["properties"]["name"]);
+    report.html([
+      "<h2>Capacity</h2>" +
+      "Capacity: " + ratio[1],
+      "Enrollment: " + ratio[0],
+      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
+    ].join("<br>"));
   }
 
   schoolStatistics(school) {
     let schoolId = school["properties"]["s_id3"];
     let ratio = this.capacity.ratios.schools[schoolId];
-    d3.select("#current-item").text(school["properties"]["school"]);
-    d3.select("#item-capacity").text(ratio[1]);
-    d3.select("#item-enrollment").text(ratio[0] + " (" + Math.round(100 * ratio[0] / ratio[1]) + "%)");
+    title.text(school["properties"]["school"]);
+    report.html([
+      "<h2>Capacity</h2>" +
+      "Capacity: " + ratio[1],
+      "Enrollment: " + ratio[0],
+      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
+    ].join("<br>"));
   }
 
 }
