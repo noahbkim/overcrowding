@@ -326,6 +326,68 @@ class CapacityPlugin extends DataPlugin {
     return this.gradient.color(value);
   }
 
+  overallStatistics() {
+    let enrollment = Math.round(this.ratios.total[0] / this.ratios.total[1] * 100);
+    let schools = Object.values(this.ratios.schools);
+    let over = schools.filter(t => t[0] > t[1]).length;
+    title.text("Montgomery County");
+    return [
+      "<h2>Capacity</h2>" +
+      "Capacity: " + this.ratios.total[0] + " (" + enrollment + "%)",
+      "Enrollment: " + this.ratios.total[1],
+      "Total schools: " + schools.length,
+      "Over-enrollment: " + over + " (" + Math.round(over / schools.length * 100) + "%)"
+    ].join("<br>");
+  }
+
+  clusterStatistics(cluster) {
+    if (cluster === null) return;
+    let clusterId = cluster["properties"]["id"];
+    let ratio = this.ratios.clusters[clusterId];
+    title.text(cluster["properties"]["name"]);
+    return [
+      "<h2>Capacity</h2>" +
+      "Capacity: " + ratio[1],
+      "Enrollment: " + ratio[0],
+      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
+    ].join("<br>");
+  }
+
+  schoolStatistics(school) {
+    let schoolId = school["properties"]["s_id3"];
+    let ratio = this.ratios.schools[schoolId];
+    title.text(school["properties"]["school"]);
+    return [
+      "<h2>Capacity</h2>" +
+      "Capacity: " + ratio[1],
+      "Enrollment: " + ratio[0],
+      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
+    ].join("<br>");
+  }
+
+}
+
+
+class StudentsPlugin extends DataPlugin {
+
+  constructor() {
+    super(d3.csv, PREFIX + "data/enrollment.csv");
+
+  }
+
+  prepare(data) {
+
+  }
+
+  schoolStatistics(school) {
+    let schoolId = school["properties"]["s_id3"];
+    title.text(school["properties"]["school"]);
+    return [
+      "<h2>Ethnicity</h2>"
+    ].join("<br>");
+  }
+
+
 }
 
 
@@ -335,7 +397,7 @@ class Controller {
   /** Initialize a new application. */
   constructor() {
     this.capacity = new CapacityPlugin();
-    this.data = new Data([this.capacity]);
+    this.data = new Data([this.capacity, new StudentsPlugin()]);
     this.renderer = new Renderer(d3.select("#overcrowding").append("svg").attr("width", W).attr("height", H));
     this.objects = {county: null, clusters: null, schools: null};  // drawn objects
     this.selection = {cluster: null, school: null};
@@ -559,42 +621,33 @@ class Controller {
 
   /** Fill in statistics on the overall view.*/
   overallStatistics() {
-    let enrollment = Math.round(this.capacity.ratios.total[0] / this.capacity.ratios.total[1] * 100);
-    let schools = Object.values(this.capacity.ratios.schools);
-    let over = schools.filter(t => t[0] > t[1]).length;
-    title.text("Montgomery County");
-    report.html([
-      "<h2>Capacity</h2>" +
-      "Capacity: " + this.capacity.ratios.total[0] + " (" + enrollment + "%)",
-      "Enrollment: " + this.capacity.ratios.total[1],
-      "Total schools: " + schools.length,
-      "Over-enrolled: " + over + " (" + Math.round(over / schools.length * 100) + "%)"
-    ].join("<br>"));
+    let statistics = [];
+    for (let i = 0; i < this.data.plugins.length; i++) {
+      let plugin = this.data.plugins[i];
+      if (plugin.overallStatistics)
+        statistics.push(plugin.overallStatistics() || "");
+    }
+    report.html(statistics.join("<br>"));
   }
 
   clusterStatistics(cluster) {
-    if (cluster === null) return;
-    let clusterId = cluster["properties"]["id"];
-    let ratio = this.capacity.ratios.clusters[clusterId];
-    title.text(cluster["properties"]["name"]);
-    report.html([
-      "<h2>Capacity</h2>" +
-      "Capacity: " + ratio[1],
-      "Enrollment: " + ratio[0],
-      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
-    ].join("<br>"));
+    let statistics = [];
+    for (let i = 0; i < this.data.plugins.length; i++) {
+      let plugin = this.data.plugins[i];
+      if (plugin.clusterStatistics)
+        statistics.push(plugin.clusterStatistics(cluster) || "");
+    }
+    report.html(statistics.join("<br>"));
   }
 
   schoolStatistics(school) {
-    let schoolId = school["properties"]["s_id3"];
-    let ratio = this.capacity.ratios.schools[schoolId];
-    title.text(school["properties"]["school"]);
-    report.html([
-      "<h2>Capacity</h2>" +
-      "Capacity: " + ratio[1],
-      "Enrollment: " + ratio[0],
-      "Over-enrollment: " + Math.round(100 * ratio[0] / ratio[1]) + "%"
-    ].join("<br>"));
+    let statistics = [];
+    for (let i = 0; i < this.data.plugins.length; i++) {
+      let plugin = this.data.plugins[i];
+      if (plugin.schoolStatistics)
+        statistics.push(plugin.schoolStatistics(school) || "");
+    }
+    report.html(statistics.join("<br>"));
   }
 
 }
