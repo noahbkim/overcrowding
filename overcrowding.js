@@ -368,6 +368,11 @@ class CapacityPlugin extends DataPlugin {
 }
 
 
+function formatPercentage(decimal) {
+  return (Math.round(decimal * 1000) / 10) + "%";
+}
+
+
 class StudentsPlugin extends DataPlugin {
 
   constructor() {
@@ -375,15 +380,37 @@ class StudentsPlugin extends DataPlugin {
 
   }
 
-  prepare(data) {
+  prepare(data, clusters, schools) {
+    this.data = data;
+    this.ethnicity = {};
+    for (let school of schools) {
+      let schoolId = school["properties"]["s_id3"];
+      this.ethnicity[schoolId] = this.search(schoolId);
+    }
+  }
 
+  search(schoolId) {
+    let entries = this.data.filter(c => c["SCHOOL #"] === schoolId);
+    let parsed = {
+      "American Indian": 0, "Asian": 0, "Black": 0,
+      "White": 0, "Hispanic": 0, "Pacific Islander": 0,
+      "Multiple Race": 0};
+    for (let i = 0; i < entries.length; i++) {
+      for (let key of Object.keys(parsed)) {
+        parsed[key] += parseFloat(entries[i][key.replace(" ", "")].replace("--", "0"))
+      }
+    }
+    return parsed;
   }
 
   schoolStatistics(school) {
     let schoolId = school["properties"]["s_id3"];
     title.text(school["properties"]["school"]);
+    const ethnicity = this.ethnicity[schoolId];
+    const total = Object.keys(ethnicity).map(key => ethnicity[key]).reduce((a, b) => a + b);
     return [
-      "<h2>Ethnicity</h2>"
+      "<h2>Ethnicity</h2>" +
+      Object.keys(ethnicity).map(key => key + ": " + formatPercentage(ethnicity[key] / total)).join("<br>")
     ].join("<br>");
   }
 
